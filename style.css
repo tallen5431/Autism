@@ -1,0 +1,131 @@
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.container {
+    text-align: center;
+    color: white;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.cube {
+    width: 200px;
+    height: 200px;
+    position: absolute;
+    transform-style: preserve-3d;
+    transform: rotateX(45deg) rotateY(45deg);
+}
+
+.face {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.8); /* Increased opacity */
+    border: 2px solid white;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.face img {
+    width: 100%;
+    height: 100%;
+    opacity: 0.8; /* Adjust transparency here */
+    object-fit: cover;
+}
+
+.active {
+    background-color: red;
+}
+
+.front { transform: translateZ(100px); }
+.back { transform: rotateY(180deg) translateZ(100px); }
+.left { transform: rotateY(-90deg) translateZ(100px); }
+.right { transform: rotateY(90deg) translateZ(100px); }
+.top { transform: rotateX(90deg) translateZ(100px); }
+.bottom { transform: rotateX(-90deg) translateZ(100px); }
+
+h1 {
+    font-size: 2.5em;
+    margin-bottom: 0.5em;
+}
+
+p {
+    font-size: 1.2em;
+    line-height: 1.6;
+}.pyramid {
+    width: 0;
+    height: 0;
+    border-left: 100px solid transparent;
+    border-right: 100px solid transparent;
+    border-bottom: 200px solid rgba(255, 255, 255, 0.2);
+    position: absolute;
+    transform-style: preserve-3d;
+    transform: rotateX(-45deg) rotateY(0deg);
+}
+
+.pyramid .face {
+    position: absolute;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid white;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.pyramid .front {
+    width: 0;
+    height: 0;
+    border-left: 100px solid transparent;
+    border-right: 100px solid transparent;
+    border-bottom: 200px solid rgba(255, 255, 255, 0.2);
+    transform: translateZ(100px);
+}
+
+.pyramid .back {
+    width: 0;
+    height: 0;
+    border-left: 100px solid transparent;
+    border-right: 100px solid transparent;
+    border-bottom: 200px solid rgba(255, 255, 255, 0.2);
+    transform: rotateY(180deg) translateZ(100px);
+}
+
+.pyramid .left {
+    width: 0;
+    height: 0;
+    border-left: 100px solid transparent;
+    border-right: 100px solid transparent;
+    border-bottom: 200px solid rgba(255, 255, 255, 0.2);
+    transform: rotateY(-90deg) translateZ(100px);
+}
+
+.pyramid .right {
+    width: 0;
+    height: 0;
+    border-left: 100px solid transparent;
+    border-right: 100px solid transparent;
+    border-bottom: 200px solid rgba(255, 255, 255, 0.2);
+    transform: rotateY(90deg) translateZ(100px);
+}
+
+.pyramid .top {
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid white;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    transform: rotateX(-90deg) translateZ(100px);
+}
