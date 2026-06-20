@@ -11,6 +11,84 @@ body {
     overflow: hidden;
 }
 
+/* Add a more interesting animated background */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Enhanced animated background with multiple layers */
+body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(255, 0, 150, 0.2) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(0, 200, 255, 0.2) 0%, transparent 20%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 0, 0.15) 0%, transparent 20%),
+        radial-gradient(circle at 80% 20%, rgba(100, 0, 255, 0.2) 0%, transparent 20%),
+        radial-gradient(circle at 20% 80%, rgba(0, 255, 150, 0.2) 0%, transparent 20%);
+    animation: backgroundShift 40s ease-in-out infinite;
+    z-index: -1;
+}
+
+@keyframes backgroundShift {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(15px, 15px); }
+    50% { transform: translate(0, 0); }
+    75% { transform: translate(-15px, -15px); }
+    100% { transform: translate(0, 0); }
+}
+
+/* Enhanced particle effect with more variety */
+body::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.2) 2px, transparent 3px),
+        radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.2) 2px, transparent 3px),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 1px, transparent 2px),
+        radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.15) 1px, transparent 2px),
+        radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.15) 1px, transparent 2px);
+    background-size: 60px 60px;
+    animation: particleMove 25s linear infinite;
+    z-index: -1;
+}
+
+@keyframes particleMove {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(10px, 10px); }
+    50% { transform: translate(0, 0); }
+    75% { transform: translate(-10px, -10px); }
+    100% { transform: translate(0, 0); }
+}
+
+/* Add a subtle pulsing gradient effect */
+body::before {
+    animation: pulse 30s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
 .container {
     text-align: center;
     color: white;
