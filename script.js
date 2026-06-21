@@ -69,6 +69,13 @@ function getValue(data, keys, fallback = null) {
     return fallback;
 }
 
+// Try the current level first, then one level deeper (handles APIs that wrap in {data:{...}})
+function getValueDeep(data, keys, fallback = null) {
+    const shallow = getValue(data, keys);
+    if (shallow !== null) return shallow;
+    return getValue(normalizePayload(data), keys, fallback);
+}
+
 function humanizeKey(key) {
     return key.replace(/[_-]/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 }
@@ -78,6 +85,36 @@ function formatValue(value) {
     if (Array.isArray(value)) return value.length ? value.map(formatValue).join(', ') : 'None';
     if (typeof value === 'object') return JSON.stringify(value, null, 2);
     return String(value);
+}
+
+// Fields that deserve a bar gauge and their max scale
+const GAUGE_FIELDS = {
+    risk_score: 10, composite_score: 10, score: 10,
+    reduction_pct: 100, traffic_reduction_pct: 100,
+    utilisation_pct: 100, utilisation: 100,
+    capacity_utilisation: 100, spr_coverage_days: 120
+};
+
+function getGaugeMax(key) {
+    return GAUGE_FIELDS[key.toLowerCase().replace(/[- ]/g, '_')] || null;
+}
+
+function renderGaugeBar(num, max) {
+    const pct = Math.min(100, Math.max(0, (num / max) * 100));
+    const color = pct > 75 ? '#ff3344' : pct > 40 ? '#ff8800' : '#00ff88';
+    const unit = max === 10 ? '/10' : '%';
+    return `<div class="gauge-bar-inline"><div class="gauge-bar-track"><div class="gauge-bar-fill" style="width:${pct.toFixed(1)}%;background:${color};box-shadow:0 0 5px ${color}99"></div></div><span class="gauge-bar-num">${num}${unit}</span></div>`;
+}
+
+function updateRiskGauge(scoreText) {
+    const ring = document.getElementById('risk-gauge-ring');
+    if (!ring) return;
+    const num = parseFloat(scoreText);
+    if (isNaN(num)) return;
+    const pct = Math.min(100, (num / 10) * 100);
+    const color = pct > 75 ? '#ff3344' : pct > 50 ? '#ff8800' : '#00ff88';
+    ring.style.setProperty('--g-pct', pct.toFixed(1));
+    ring.style.setProperty('--g-color', color);
 }
 
 function applyStatusClass(element, text) {
@@ -114,7 +151,13 @@ function renderObject(element, data) {
 
     if (typeof payload === 'object') {
         element.innerHTML = Object.entries(payload)
-            .map(([key, value]) => `<div class="data-row"><span class="data-key">${escapeHtml(humanizeKey(key))}</span><span class="data-val">${renderItem(value)}</span></div>`)
+            .map(([key, value]) => {
+                const gaugeMax = getGaugeMax(key);
+                const valHtml = (gaugeMax !== null && typeof value === 'number')
+                    ? renderGaugeBar(value, gaugeMax)
+                    : `<span class="data-val">${renderItem(value)}</span>`;
+                return `<div class="data-row"><span class="data-key">${escapeHtml(humanizeKey(key))}</span>${valHtml}</div>`;
+            })
             .join('');
         return;
     }
@@ -124,19 +167,45 @@ function renderObject(element, data) {
 
 function renderItem(item) {
     if (item === null || item === undefined || item === '') return '—';
+    if (typeof item === 'boolean') return item ? 'Yes' : 'No';
+    if (typeof item === 'number') {
+        return Number.isInteger(item) && Math.abs(item) >= 1000
+            ? item.toLocaleString()
+            : String(item);
+    }
+    if (typeof item === 'string') {
+        // Format ISO date/datetime strings
+        if (/^\d{4}-\d{2}-\d{2}/.test(item)) {
+            try {
+                const d = new Date(item);
+                if (!isNaN(d)) {
+                    const hasTime = item.includes('T') && !/T00:00:00/.test(item);
+                    return escapeHtml(d.toLocaleString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric',
+                        ...(hasTime ? { hour: 'numeric', minute: '2-digit' } : {})
+                    }));
+                }
+            } catch (e) {}
+        }
+        return escapeHtml(item);
+    }
     if (Array.isArray(item)) {
         if (!item.length) return 'None';
         if (item.some(v => typeof v === 'object' && v !== null)) {
             return item.map(v => `<div class="item-card">${renderItem(v)}</div>`).join('');
         }
-        return `<ul class="item-list">${item.map(v => `<li>${escapeHtml(String(v))}</li>`).join('')}</ul>`;
+        return `<ul class="item-list">${item.map(v => `<li>${renderItem(v)}</li>`).join('')}</ul>`;
     }
     if (typeof item === 'object') {
         const entries = Object.entries(item);
         if (!entries.length) return '—';
-        return entries.map(([k, v]) =>
-            `<div class="nested-row"><span class="data-key">${escapeHtml(humanizeKey(k))}</span><span class="data-val">${renderItem(v)}</span></div>`
-        ).join('');
+        return entries.map(([k, v]) => {
+            const gaugeMax = getGaugeMax(k);
+            const valHtml = (gaugeMax !== null && typeof v === 'number')
+                ? renderGaugeBar(v, gaugeMax)
+                : `<span class="data-val">${renderItem(v)}</span>`;
+            return `<div class="nested-row"><span class="data-key">${escapeHtml(humanizeKey(k))}</span>${valHtml}</div>`;
+        }).join('');
     }
     return escapeHtml(String(item));
 }
@@ -169,7 +238,7 @@ async function fetchProxy(endpoint, query = {}) {
 }
 
 async function loadSection(config) {
-    const { endpoint, detailElement, panelBadgeElement, lastUpdatedElement, summaryElement, summaryKeys, emptySummary, isStatus, render } = config;
+    const { endpoint, detailElement, panelBadgeElement, lastUpdatedElement, summaryElement, summaryKeys, emptySummary, isStatus, onSummarySet, render } = config;
     setState(detailElement, 'Loading...', 'loading');
     if (summaryElement) setText(summaryElement, 'Loading...');
 
@@ -178,11 +247,10 @@ async function loadSection(config) {
         if (render) render(data);
         else renderObject(detailElement, data);
 
-        // normalizePayload a second time — the Hormuz API wraps responses in {data:{...}}
-        // so after the first unwrap in fetchProxy we may still have {data:{...}}
-        const payload = normalizePayload(data);
-
-        const summaryText = formatValue(getValue(payload, summaryKeys, emptySummary || 'No data'));
+        // getValueDeep tries outer level first, then one level deeper
+        // (handles APIs like crisis that return {status:"x", data:[...]} vs risk that returns {data:{score:9.3}})
+        const summaryText = formatValue(getValueDeep(data, summaryKeys, emptySummary || '—'));
+        const updatedText = formatValue(getValueDeep(data, ['last_updated', 'lastUpdated', 'updated_at', 'timestamp'], null));
 
         if (summaryElement) {
             setText(summaryElement, summaryText);
@@ -192,7 +260,8 @@ async function loadSection(config) {
             setText(panelBadgeElement, summaryText);
             applyStatusClass(panelBadgeElement, summaryText);
         }
-        if (lastUpdatedElement) setText(lastUpdatedElement, formatTimestamp(getValue(payload, ['last_updated', 'lastUpdated', 'updated_at', 'timestamp'], new Date())));
+        if (lastUpdatedElement) setText(lastUpdatedElement, formatTimestamp(updatedText !== '—' ? updatedText : new Date()));
+        if (onSummarySet) onSummarySet(summaryText);
     } catch (error) {
         setState(detailElement, error.message, 'error');
         if (summaryElement) setText(summaryElement, 'Error');
@@ -215,7 +284,8 @@ function setupDashboard() {
             lastUpdatedElement: dashboardElements.riskLastUpdated,
             summaryElement: dashboardElements.riskScore,
             summaryKeys: ['risk_score', 'score', 'composite_score', 'level'],
-            emptySummary: '—'
+            emptySummary: '—',
+            onSummarySet: updateRiskGauge
         },
         {
             endpoint: 'crisis',
@@ -268,8 +338,7 @@ async function loadDependencyCountry(country) {
     try {
         const data = await fetchProxy('dependency', { country });
         renderObject(dashboardElements.dependencyData, data);
-        const payload = normalizePayload(data);
-        const summary = getValue(payload, ['rank', 'dependency_rank', 'import_dependence', 'gulf_import_share', 'dependency_level'], 'US');
+        const summary = getValueDeep(data, ['rank', 'dependency_rank', 'import_dependence', 'gulf_import_share', 'dependency_level'], 'US');
         if (badgeEl) {
             badgeEl.textContent = formatValue(summary);
             applyStatusClass(badgeEl, formatValue(summary));
