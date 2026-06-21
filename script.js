@@ -4,14 +4,13 @@ const thirdCube = document.querySelector('.third-cube');
 const fourthCube = document.querySelector('.fourth-cube');
 
 const HORMUZ_PROXY_BASE_URL = (window.HORMUZ_PROXY_BASE_URL || 'https://your-worker.example.workers.dev').replace(/\/$/, '');
-const ONE_HOUR = 60 * 60 * 1000;
 const DEFAULT_DEPENDENCY_COUNTRY = 'US';
 const POLL_INTERVALS = {
-    risk: ONE_HOUR,
-    crisis: ONE_HOUR,
-    traffic: ONE_HOUR,
-    prices: ONE_HOUR,
-    bypass: ONE_HOUR
+    risk:    10 * 60 * 1000,
+    crisis:  10 * 60 * 1000,
+    traffic: 15 * 60 * 1000,
+    prices:  15 * 60 * 1000,
+    bypass:  30 * 60 * 1000
 };
 
 const dashboardElements = {
@@ -213,7 +212,9 @@ function setupDashboard() {
         }
     ];
 
-    sections.forEach(section => startPolling(section, POLL_INTERVALS[section.endpoint]));
+    sections.forEach((section, index) => {
+        setTimeout(() => startPolling(section, POLL_INTERVALS[section.endpoint]), index * 2000);
+    });
 
     if (dashboardElements.countryDependencySelect) {
         dashboardElements.countryDependencySelect.value = DEFAULT_DEPENDENCY_COUNTRY;

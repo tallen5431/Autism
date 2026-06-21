@@ -1,13 +1,12 @@
 const HORMUZ_API_BASE_URL = 'https://mhh.gic.mybluehost.me/wp-json/hlapi/v2';
 
-const ONE_HOUR_SECONDS = 3600;
 const ROUTE_CACHE_TTL_SECONDS = {
-  risk: ONE_HOUR_SECONDS,
-  crisis: ONE_HOUR_SECONDS,
-  traffic: ONE_HOUR_SECONDS,
-  prices: ONE_HOUR_SECONDS,
-  bypass: ONE_HOUR_SECONDS,
-  dependency: ONE_HOUR_SECONDS
+  risk:       10 * 60,
+  crisis:     10 * 60,
+  traffic:    15 * 60,
+  prices:     15 * 60,
+  bypass:     30 * 60,
+  dependency: 30 * 60
 };
 
 const CORS_HEADERS = {
