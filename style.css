@@ -237,11 +237,11 @@ h1 {
 }
 
 .score-value, .status-value, .prices-value, .traffic-value {
-    font-size: 1.15em;
+    font-size: 1.22em;
     font-weight: 900;
-    margin: 4px 0;
+    margin: 5px 0 3px;
     color: var(--neon-cyan);
-    text-shadow: 0 0 8px rgba(0, 238, 255, 0.7);
+    text-shadow: 0 0 10px rgba(0, 238, 255, 0.75), 0 0 24px rgba(0, 238, 255, 0.3);
     text-transform: capitalize;
     letter-spacing: 0.04em;
 }
@@ -385,18 +385,24 @@ h1 {
     opacity: 1;
 }
 
-/* Panel content — collapsed by default */
+/* Panel content — collapsed by default, click to toggle */
 .panel-data {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.35s ease;
+    transition: max-height 0.38s ease;
 }
 
 .dashboard-panel.expanded .panel-data {
-    max-height: 280px;
+    max-height: 300px;
     overflow-y: auto;
+    padding-top: 3px;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 0, 170, 0.35) rgba(255, 255, 255, 0.02);
+}
+
+.dashboard-panel.expanded {
+    border-color: rgba(255, 0, 170, 0.45);
+    box-shadow: 0 0 22px rgba(255, 0, 170, 0.14), inset 0 0 28px rgba(100, 0, 150, 0.12);
 }
 
 .dashboard-panel.expanded .panel-data::-webkit-scrollbar { width: 3px; }
@@ -511,7 +517,16 @@ h1 {
     font-size: 0.82em;
 }
 
-.loading-state { color: rgba(0, 238, 255, 0.65); }
+.loading-state {
+    color: rgba(0, 238, 255, 0.75);
+    animation: loadingPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes loadingPulse {
+    0%, 100% { opacity: 0.55; }
+    50%       { opacity: 1; }
+}
+
 .empty-state   { color: rgba(200, 160, 255, 0.55); }
 
 .error-state {
@@ -524,9 +539,9 @@ h1 {
     display: grid;
     grid-template-columns: minmax(70px, 36%) 1fr;
     gap: 0 8px;
-    margin: 3px 0;
-    font-size: 0.83em;
-    line-height: 1.35;
+    margin: 4px 0;
+    font-size: 0.84em;
+    line-height: 1.4;
     align-items: baseline;
 }
 
@@ -551,8 +566,8 @@ h1 {
 }
 
 .data-val {
-    color: rgba(220, 250, 255, 0.95);
-    font-weight: 500;
+    color: rgba(230, 252, 255, 0.97);
+    font-weight: 600;
     word-break: break-word;
 }
 
@@ -603,8 +618,8 @@ h1 {
 
 /* ── Gauge ring (risk score card) ── */
 .gauge-ring {
-    width: 58px;
-    height: 58px;
+    width: 66px;
+    height: 66px;
     border-radius: 50%;
     background: conic-gradient(
         var(--g-color, rgba(255,255,255,0.12)) calc(var(--g-pct, 0) * 1%),
@@ -613,22 +628,23 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 3px auto;
+    margin: 4px auto;
     position: relative;
+    box-shadow: 0 0 14px var(--g-color, rgba(0, 238, 255, 0.3));
 }
 
 .gauge-ring::after {
     content: '';
     position: absolute;
-    inset: 7px;
+    inset: 8px;
     border-radius: 50%;
-    background: rgba(12, 0, 35, 0.95);
+    background: rgba(12, 0, 35, 0.96);
 }
 
 .gauge-ring .score-value {
     position: relative;
     z-index: 1;
-    font-size: 1em;
+    font-size: 1.05em;
     margin: 0;
     line-height: 1;
 }
@@ -637,23 +653,23 @@ h1 {
 .gauge-bar-inline {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     min-width: 0;
     width: 100%;
 }
 
 .gauge-bar-track {
     flex: 1;
-    height: 5px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 3px;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 4px;
     overflow: hidden;
 }
 
 .gauge-bar-fill {
     height: 100%;
-    border-radius: 3px;
-    transition: width 0.6s ease;
+    border-radius: 4px;
+    transition: width 0.7s ease;
 }
 
 .gauge-bar-num {
@@ -661,7 +677,7 @@ h1 {
     font-weight: 700;
     color: rgba(220, 250, 255, 0.95);
     white-space: nowrap;
-    min-width: 2.8em;
+    min-width: 3em;
     text-align: right;
 }
 
