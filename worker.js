@@ -9,6 +9,9 @@ const ROUTE_CACHE_TTL_SECONDS = {
   dependency: 30 * 60
 };
 
+// KV entries expire automatically after 90 days
+const HISTORY_TTL_SECONDS = 90 * 24 * 60 * 60;
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -37,6 +40,49 @@ function cacheKeyFor(requestUrl, route) {
   return new Request(cacheUrl.toString(), { method: 'GET' });
 }
 
+// Saves a fresh API response to KV with an ISO timestamp key.
+// Runs via context.waitUntil so it never blocks the response.
+// Silently skipped if the KV binding isn't configured yet.
+async function saveToHistory(env, route, body, searchParams) {
+  if (!env.HORMUZ_HISTORY) return;
+  const timestamp = new Date().toISOString();
+  const country = searchParams.get('country');
+  const key = route === 'dependency' && country
+    ? `${route}:${country}:${timestamp}`
+    : `${route}:${timestamp}`;
+  await env.HORMUZ_HISTORY.put(key, JSON.stringify({ timestamp, data: body }), {
+    expirationTtl: HISTORY_TTL_SECONDS
+  });
+}
+
+// GET /history/{route}[?limit=200][&country=US]
+// Returns saved snapshots newest-first. Requires HORMUZ_HISTORY KV binding.
+async function handleHistory(env, route, url) {
+  if (!env.HORMUZ_HISTORY) {
+    return jsonResponse(
+      { error: 'History storage not configured. Bind a KV namespace to this worker as HORMUZ_HISTORY.' },
+      503
+    );
+  }
+
+  const limit  = Math.min(parseInt(url.searchParams.get('limit') || '200', 10), 1000);
+  const country = url.searchParams.get('country') || 'US';
+  const prefix = route === 'dependency' ? `${route}:${country}:` : `${route}:`;
+
+  const list = await env.HORMUZ_HISTORY.list({ prefix, limit });
+  const entries = await Promise.all(list.keys.map(k => env.HORMUZ_HISTORY.get(k.name, 'json')));
+
+  const valid = entries.filter(Boolean);
+  // KV list returns keys in ascending (oldest-first) order; reverse for newest-first
+  valid.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  return jsonResponse(
+    { route, count: valid.length, truncated: !list.list_complete, entries: valid },
+    200,
+    { 'Cache-Control': 'no-store' }
+  );
+}
+
 async function handleRequest(request, env, context) {
   if (request.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
   if (request.method !== 'GET') return jsonResponse({ error: 'Method not allowed' }, 405);
@@ -46,7 +92,19 @@ async function handleRequest(request, env, context) {
   }
 
   const url = new URL(request.url);
-  const route = url.pathname.replace(/^\/+|\/+$/g, '');
+  const parts = url.pathname.replace(/^\/+|\/+$/g, '').split('/');
+
+  // History route: /history/{route}
+  if (parts[0] === 'history') {
+    const route = parts[1];
+    if (!route || !Object.prototype.hasOwnProperty.call(ROUTE_CACHE_TTL_SECONDS, route)) {
+      return jsonResponse({ error: 'Unknown history endpoint.' }, 404);
+    }
+    return handleHistory(env, route, url);
+  }
+
+  // Live data route: /{route}
+  const route = parts[0];
   if (!Object.prototype.hasOwnProperty.call(ROUTE_CACHE_TTL_SECONDS, route)) {
     return jsonResponse({ error: 'Unknown endpoint.' }, 404);
   }
@@ -81,7 +139,7 @@ async function handleRequest(request, env, context) {
     let body;
     try {
       body = bodyText ? JSON.parse(bodyText) : null;
-    } catch (error) {
+    } catch {
       body = { raw: bodyText };
     }
 
@@ -97,7 +155,13 @@ async function handleRequest(request, env, context) {
       'Cache-Control': `public, max-age=${ttl}`,
       'X-Cache': 'MISS'
     });
-    context.waitUntil(cache.put(cacheKey, response.clone()));
+
+    // Edge cache + KV history write — both non-blocking
+    context.waitUntil(Promise.all([
+      cache.put(cacheKey, response.clone()),
+      saveToHistory(env, route, body, url.searchParams)
+    ]));
+
     return response;
   } catch (error) {
     return jsonResponse({ error: 'Unable to reach Hormuz API.', message: error.message }, 502);
