@@ -103,11 +103,22 @@ const GAUGE_FIELDS = {
     utilisation_pct:       { max: 100, unit: '%'     },
     utilisation:           { max: 100, unit: '%'     },
     capacity_utilisation:  { max: 100, unit: '%'     },
+    utilization_pct:       { max: 100, unit: '%'     },
+    utilization:           { max: 100, unit: '%'     },
+    capacity_utilization:  { max: 100, unit: '%'     },
     spr_coverage_days:     { max: 120, unit: ' days' }
 };
 
 function getGaugeConfig(key) {
-    return GAUGE_FIELDS[key.toLowerCase().replace(/[- ]/g, '_')] || null;
+    const k = key.toLowerCase().replace(/[- ]/g, '_');
+    if (GAUGE_FIELDS[k]) return GAUGE_FIELDS[k];
+    // Pattern-match any field whose name signals a percentage value
+    if (k.endsWith('_pct') || k.endsWith('_percent') || k.endsWith('_percentage') ||
+        k.startsWith('pct_') || k.startsWith('percent_') ||
+        k.includes('utiliz') || k.includes('utilis')) {
+        return { max: 100, unit: '%' };
+    }
+    return null;
 }
 
 function renderGaugeBar(num, max, unit = '%') {
