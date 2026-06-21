@@ -50,26 +50,25 @@ body::after {
     z-index: 0;
     pointer-events: none;
     background:
-        radial-gradient(ellipse 90% 55% at 50% 0%, rgba(110, 0, 220, 0.4) 0%, transparent 65%),
-        radial-gradient(ellipse 70% 45% at 50% 100%, rgba(255, 0, 100, 0.18) 0%, transparent 70%),
-        linear-gradient(180deg, #08001a 0%, #130030 45%, #08001a 100%);
+        radial-gradient(ellipse 80% 45% at 50% 0%, rgba(90, 0, 200, 0.35) 0%, transparent 60%),
+        linear-gradient(180deg, #03000e 0%, #0a001e 40%, #03000e 100%);
 }
 
 /* Synthwave sun */
 .synth-sun {
     position: absolute;
-    bottom: 27%;
+    bottom: 25%;
     left: 50%;
     transform: translateX(-50%);
-    width: clamp(160px, 28vw, 320px);
-    height: clamp(80px, 14vw, 160px);
+    width: clamp(200px, 36vw, 420px);
+    height: clamp(100px, 18vw, 210px);
     border-radius: 50% 50% 0 0;
     overflow: hidden;
-    background: linear-gradient(180deg, #ffaa00 0%, #ff6600 22%, #ff1166 58%, #cc00ff 100%);
+    background: linear-gradient(180deg, #ffe600 0%, #ffaa00 18%, #ff6600 38%, #ff1155 65%, #aa00dd 100%);
     box-shadow:
-        0 0 50px rgba(255, 110, 0, 0.65),
-        0 0 100px rgba(255, 0, 150, 0.4),
-        0 0 200px rgba(170, 0, 255, 0.22);
+        0 0 60px rgba(255, 160, 0, 0.75),
+        0 0 130px rgba(255, 60, 0, 0.45),
+        0 0 240px rgba(200, 0, 255, 0.25);
     animation: sunPulse 4s ease-in-out infinite;
 }
 
@@ -79,13 +78,53 @@ body::after {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 68%;
+    height: 72%;
     background: repeating-linear-gradient(
         180deg,
         transparent 0px,
-        transparent 9px,
-        rgba(8, 0, 26, 0.95) 9px,
-        rgba(8, 0, 26, 0.95) 12px
+        transparent 8px,
+        rgba(3, 0, 14, 0.96) 8px,
+        rgba(3, 0, 14, 0.96) 11px
+    );
+}
+
+/* Wireframe mountains */
+.mountain-left, .mountain-right {
+    position: absolute;
+    bottom: 25%;
+    height: 58%;
+    width: 40%;
+    background-color: #030010;
+    background-image:
+        linear-gradient(rgba(0, 140, 255, 0.32) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 140, 255, 0.32) 1px, transparent 1px);
+    background-size: 38px 38px;
+    filter: drop-shadow(0 0 6px rgba(0, 120, 255, 0.55));
+}
+
+.mountain-left {
+    left: 0;
+    clip-path: polygon(
+        0% 100%, 0% 72%,
+        8%  46%, 16% 66%,
+        26% 22%, 36% 52%,
+        48%  8%, 60% 36%,
+        72% 20%, 84% 44%,
+        94% 30%, 100% 42%,
+        100% 100%
+    );
+}
+
+.mountain-right {
+    right: 0;
+    clip-path: polygon(
+        0%  42%, 6%  30%,
+        16% 44%, 28% 20%,
+        40% 36%, 52%  8%,
+        64% 52%, 74% 22%,
+        84% 66%, 92% 46%,
+        100% 72%, 100% 100%,
+        0% 100%
     );
 }
 
@@ -100,7 +139,7 @@ body::after {
     bottom: 0;
     left: -50%;
     width: 200%;
-    height: 36%;
+    height: 40%;
     overflow: hidden;
 }
 
@@ -109,8 +148,8 @@ body::after {
     position: absolute;
     inset: 0;
     background-image:
-        linear-gradient(rgba(255, 0, 170, 0.55) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 0, 170, 0.55) 1px, transparent 1px);
+        linear-gradient(rgba(255, 0, 200, 0.75) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 0, 200, 0.75) 1px, transparent 1px);
     background-size: 80px 80px;
     background-position: center 0;
     transform: perspective(380px) rotateX(76deg);
@@ -124,8 +163,8 @@ body::after {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 55%;
-    background: linear-gradient(transparent, #08001a);
+    height: 50%;
+    background: linear-gradient(transparent, #03000e);
 }
 
 @keyframes gridScroll {
@@ -719,8 +758,9 @@ h1 {
         letter-spacing: 0.12em;
     }
 
-    .synth-sun { bottom: 20%; }
-    .grid-floor { height: 28%; }
+    .synth-sun { bottom: 18%; width: clamp(140px, 60vw, 300px); height: clamp(70px, 30vw, 150px); }
+    .grid-floor { height: 30%; }
+    .mountain-left, .mountain-right { bottom: 18%; height: 50%; width: 42%; }
 
     .cube { width: 80px; height: 80px; }
     .face { width: 80px; height: 80px; }
