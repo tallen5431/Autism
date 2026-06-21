@@ -96,7 +96,7 @@ function renderObject(element, data) {
 
     if (typeof payload === 'object') {
         element.innerHTML = Object.entries(payload)
-            .map(([key, value]) => `<div class="data-row"><strong>${escapeHtml(humanizeKey(key))}:</strong> ${renderItem(value)}</div>`)
+            .map(([key, value]) => `<div class="data-row"><span class="data-key">${escapeHtml(humanizeKey(key))}</span><span class="data-val">${renderItem(value)}</span></div>`)
             .join('');
         return;
     }
