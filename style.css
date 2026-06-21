@@ -27,7 +27,7 @@ body::before {
         radial-gradient(circle at 50% 50%, rgba(255, 255, 0, 0.15) 0%, transparent 20%),
         radial-gradient(circle at 80% 20%, rgba(100, 0, 255, 0.2) 0%, transparent 20%),
         radial-gradient(circle at 20% 80%, rgba(0, 255, 150, 0.2) 0%, transparent 20%);
-    animation: backgroundShift 40s ease-in-out infinite;
+    animation: backgroundShift 40s ease-in-out infinite, pulse 30s ease-in-out infinite;
     z-index: -1;
 }
 
@@ -64,11 +64,6 @@ body::after {
     50% { transform: translate(0, 0); }
     75% { transform: translate(-10px, -10px); }
     100% { transform: translate(0, 0); }
-}
-
-/* Add a subtle pulsing gradient effect */
-body::before {
-    animation: pulse 30s ease-in-out infinite;
 }
 
 @keyframes pulse {

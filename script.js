@@ -98,7 +98,7 @@ function renderObject(element, data) {
 
     if (typeof payload === 'object') {
         element.innerHTML = Object.entries(payload)
-            .map(([key, value]) => `<div class="data-row"><strong>${humanizeKey(key)}:</strong> ${renderItem(value)}</div>`)
+            .map(([key, value]) => `<div class="data-row"><strong>${escapeHtml(humanizeKey(key))}:</strong> ${renderItem(value)}</div>`)
             .join('');
         return;
     }
@@ -235,7 +235,7 @@ async function loadDependencyCountry(country) {
         const data = await fetchProxy('dependency', { country });
         renderObject(dashboardElements.dependencyData, data);
     } catch (error) {
-        setState(dashboardElements.dependencyData, error.message, 'error');
+        setState(dashboardElements.dependencyData, error?.message || String(error), 'error');
     }
 }
 
@@ -250,6 +250,8 @@ window.addEventListener('click', function() {
         audio.play().catch(e => console.log("Audio play failed:", e));
     }
 });
+
+const collidingPairs = new Set();
 
 // First cube variables (moved outside animate function)
 let x = 100, y = 100; // Changed starting position
@@ -285,7 +287,7 @@ function calculateCollision(mass1, mass2, u1x, u1y, u2x, u2y) {
 }
 
 // Add particle effect function
-function createParticles(x, y, color) {
+function createParticles(startX, startY, color) {
     for (let i = 0; i < 20; i++) {
         const particle = document.createElement('div');
         particle.style.position = 'absolute';
@@ -293,37 +295,36 @@ function createParticles(x, y, color) {
         particle.style.height = '8px';
         particle.style.borderRadius = '50%';
         particle.style.backgroundColor = color;
-        particle.style.left = x + 'px';
-        particle.style.top = y + 'px';
         particle.style.pointerEvents = 'none';
         particle.style.zIndex = '1000';
         document.body.appendChild(particle);
 
-        // Animate particle
         const angle = Math.random() * Math.PI * 2;
         const speed = 2 + Math.random() * 3;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
-
+        const pvx = Math.cos(angle) * speed;
+        const pvy = Math.sin(angle) * speed;
+        let px = startX;
+        let py = startY;
         let opacity = 1;
-        const animate = () => {
+
+        particle.style.left = px + 'px';
+        particle.style.top = py + 'px';
+
+        const animateParticle = () => {
             opacity -= 0.02;
             if (opacity <= 0) {
                 particle.remove();
                 return;
             }
-
-            const currentX = parseFloat(particle.style.left);
-            const currentY = parseFloat(particle.style.top);
-
-            particle.style.left = (currentX + vx) + 'px';
-            particle.style.top = (currentY + vy) + 'px';
+            px += pvx;
+            py += pvy;
+            particle.style.left = px + 'px';
+            particle.style.top = py + 'px';
             particle.style.opacity = opacity;
-
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateParticle);
         };
 
-        animate();
+        animateParticle();
     }
 }
 
@@ -407,52 +408,47 @@ function animate() {
         for (let j = i + 1; j < cubes.length; j++) {
             const cube1 = cubes[i];
             const cube2 = cubes[j];
+            const pairKey = `${i}-${j}`;
 
             const distance = Math.sqrt((cube1.x - cube2.x) ** 2 + (cube1.y - cube2.y) ** 2);
             if (distance < 200) {
-                // Create collision particles
-                createParticles(cube1.x, cube1.y, '#ff00ff');
+                // Relative velocity from position deltas; only respond when cubes are approaching
+                const relVx = (cube1.x - cube1.prevX) - (cube2.x - cube2.prevX);
+                const relVy = (cube1.y - cube1.prevY) - (cube2.y - cube2.prevY);
+                const sepX = cube1.x - cube2.x;
+                const sepY = cube1.y - cube2.y;
+                const approaching = (relVx * sepX + relVy * sepY) < 0;
 
-                // Calculate relative velocity using previous positions to get correct direction
-                const vx = (cube1.x - cube1.prevX) - (cube2.x - cube2.prevX);
-                const vy = (cube1.y - cube1.prevY) - (cube2.y - cube2.prevY);
+                if (approaching) {
+                    if (!collidingPairs.has(pairKey)) {
+                        createParticles(cube1.x, cube1.y, '#ff00ff');
+                    }
+                    collidingPairs.add(pairKey);
 
-                // Elastic collision response
-                const mass1 = 1;
-                const mass2 = 1;
+                    const { v1x, v1y, v2x, v2y } = calculateCollision(1, 1, cube1.dx, cube1.dy, cube2.dx, cube2.dy);
 
-                const u1x = cube1.dx;
-                const u1y = cube1.dy;
-                const u2x = cube2.dx;
-                const u2y = cube2.dy;
+                    if (cube1.id === 0) { dx = v1x; dy = v1y; }
+                    else if (cube1.id === 1) { secondDx = v1x; secondDy = v1y; }
+                    else if (cube1.id === 2) { thirdDx = v1x; thirdDy = v1y; }
+                    else { fourthDx = v1x; fourthDy = v1y; }
 
-                const { v1x, v1y, v2x, v2y } = calculateCollision(mass1, mass2, u1x, u1y, u2x, u2y);
+                    if (cube2.id === 0) { dx = v2x; dy = v2y; }
+                    else if (cube2.id === 1) { secondDx = v2x; secondDy = v2y; }
+                    else if (cube2.id === 2) { thirdDx = v2x; thirdDy = v2y; }
+                    else { fourthDx = v2x; fourthDy = v2y; }
 
-                // Store velocities before applying new ones to prevent using updated values in same frame
-                const newDx1 = v1x;
-                const newDy1 = v1y;
-                const newDx2 = v2x;
-                const newDy2 = v2y;
+                    // Update snapshot so later pairs in the same frame see the new velocities
+                    cubes[i].dx = v1x; cubes[i].dy = v1y;
+                    cubes[j].dx = v2x; cubes[j].dy = v2y;
+                } else {
+                    collidingPairs.delete(pairKey);
+                }
 
-                // Apply new velocities immediately
-                if (cube1.id === 0) { dx = newDx1; dy = newDy1; }
-                else if (cube1.id === 1) { secondDx = newDx1; secondDy = newDy1; }
-                else if (cube1.id === 2) { thirdDx = newDx1; thirdDy = newDy1; }
-                else { fourthDx = newDx1; fourthDy = newDy1; }
-
-                if (cube2.id === 0) { dx = newDx2; dy = newDy2; }
-                else if (cube2.id === 1) { secondDx = newDx2; secondDy = newDy2; }
-                else if (cube2.id === 2) { thirdDx = newDx2; thirdDy = newDy2; }
-                else { fourthDx = newDx2; fourthDy = newDy2; }
-
-                // Add a minimum distance threshold to prevent continuous collisions
                 if (distance < 150) {
-                    // Move cubes apart to prevent overlap - this should be done BEFORE applying new positions
                     const angle = Math.atan2(cube1.y - cube2.y, cube1.x - cube2.x);
-                    const moveX = Math.cos(angle) * 35; // Increased separation distance
+                    const moveX = Math.cos(angle) * 35;
                     const moveY = Math.sin(angle) * 35;
 
-                    // Apply separation immediately to prevent sticking
                     if (cube1.id === 0) { x += moveX; y += moveY; }
                     else if (cube1.id === 1) { secondX += moveX; secondY += moveY; }
                     else if (cube1.id === 2) { thirdX += moveX; thirdY += moveY; }
@@ -463,6 +459,8 @@ function animate() {
                     else if (cube2.id === 2) { thirdX -= moveX; thirdY -= moveY; }
                     else { fourthX -= moveX; fourthY -= moveY; }
                 }
+            } else {
+                collidingPairs.delete(pairKey);
             }
         }
     }
@@ -477,12 +475,12 @@ function setupCubeClick(cube, dxVar, dyVar) {
         if (dxVar === 'dx') { dx = -dx; }
         else if (dxVar === 'secondDx') { secondDx = -secondDx; }
         else if (dxVar === 'thirdDx') { thirdDx = -thirdDx; }
-        else { fourthDx = -fourthDx; }
+        else if (dxVar === 'fourthDx') { fourthDx = -fourthDx; }
 
         if (dyVar === 'dy') { dy = -dy; }
         else if (dyVar === 'secondDy') { secondDy = -secondDy; }
         else if (dyVar === 'thirdDy') { thirdDy = -thirdDy; }
-        else { fourthDy = -fourthDy; }
+        else if (dyVar === 'fourthDy') { fourthDy = -fourthDy; }
 
         // Change image randomly
         const images = ['obama.png', 'trump.jpg', 'biden.jpg', 'rigby.jpg'];
@@ -505,6 +503,5 @@ document.addEventListener('DOMContentLoaded', function() {
   setupCubeClick(secondCube, 'secondDx', 'secondDy');
   setupCubeClick(thirdCube, 'thirdDx', 'thirdDy');
   setupCubeClick(fourthCube, 'fourthDx', 'fourthDy');
+  animate();
 });
-
-animate();
