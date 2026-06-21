@@ -80,6 +80,19 @@ function formatValue(value) {
     return String(value);
 }
 
+function applyStatusClass(element, text) {
+    if (!element) return;
+    const lower = String(text).toLowerCase();
+    element.classList.remove('val-success', 'val-warning', 'val-danger');
+    if (['success', 'normal', 'low', 'open', 'operational', 'active'].some(s => lower.includes(s))) {
+        element.classList.add('val-success');
+    } else if (['moderate', 'warning', 'elevated', 'restricted', 'reduced', 'disrupted'].some(s => lower.includes(s))) {
+        element.classList.add('val-warning');
+    } else if (['critical', 'severe', 'high', 'closed', 'crisis'].some(s => lower.includes(s))) {
+        element.classList.add('val-danger');
+    }
+}
+
 function renderObject(element, data) {
     clearState(element);
     const payload = normalizePayload(data);
@@ -156,7 +169,7 @@ async function fetchProxy(endpoint, query = {}) {
 }
 
 async function loadSection(config) {
-    const { endpoint, detailElement, lastUpdatedElement, summaryElement, summaryKeys, emptySummary, render } = config;
+    const { endpoint, detailElement, panelBadgeElement, lastUpdatedElement, summaryElement, summaryKeys, emptySummary, isStatus, render } = config;
     setState(detailElement, 'Loading...', 'loading');
     if (summaryElement) setText(summaryElement, 'Loading...');
 
@@ -165,14 +178,25 @@ async function loadSection(config) {
         if (render) render(data);
         else renderObject(detailElement, data);
 
+        // normalizePayload a second time — the Hormuz API wraps responses in {data:{...}}
+        // so after the first unwrap in fetchProxy we may still have {data:{...}}
+        const payload = normalizePayload(data);
+
+        const summaryText = formatValue(getValue(payload, summaryKeys, emptySummary || 'No data'));
+
         if (summaryElement) {
-            const summary = getValue(data, summaryKeys, emptySummary || 'No data');
-            setText(summaryElement, formatValue(summary));
+            setText(summaryElement, summaryText);
+            if (isStatus) applyStatusClass(summaryElement, summaryText);
         }
-        if (lastUpdatedElement) setText(lastUpdatedElement, formatTimestamp(getValue(data, ['last_updated', 'lastUpdated', 'updated_at', 'timestamp'], new Date())));
+        if (panelBadgeElement) {
+            setText(panelBadgeElement, summaryText);
+            applyStatusClass(panelBadgeElement, summaryText);
+        }
+        if (lastUpdatedElement) setText(lastUpdatedElement, formatTimestamp(getValue(payload, ['last_updated', 'lastUpdated', 'updated_at', 'timestamp'], new Date())));
     } catch (error) {
         setState(detailElement, error.message, 'error');
         if (summaryElement) setText(summaryElement, 'Error');
+        if (panelBadgeElement) setText(panelBadgeElement, 'err');
         if (lastUpdatedElement) setText(lastUpdatedElement, 'Last updated: failed');
     }
 }
@@ -187,40 +211,47 @@ function setupDashboard() {
         {
             endpoint: 'risk',
             detailElement: dashboardElements.riskDetails,
+            panelBadgeElement: document.getElementById('risk-badge'),
             lastUpdatedElement: dashboardElements.riskLastUpdated,
             summaryElement: dashboardElements.riskScore,
-            summaryKeys: ['score', 'risk_score', 'composite_score', 'level'],
-            emptySummary: 'No risk data'
+            summaryKeys: ['risk_score', 'score', 'composite_score', 'level'],
+            emptySummary: '—'
         },
         {
             endpoint: 'crisis',
             detailElement: dashboardElements.crisisFeed,
+            panelBadgeElement: document.getElementById('crisis-badge'),
             lastUpdatedElement: dashboardElements.crisisLastUpdated,
             summaryElement: dashboardElements.crisisStatus,
             summaryKeys: ['status', 'crisis_status', 'level', 'headline'],
-            emptySummary: 'No crisis data'
+            emptySummary: '—',
+            isStatus: true
         },
         {
             endpoint: 'traffic',
             detailElement: dashboardElements.trafficData,
+            panelBadgeElement: document.getElementById('traffic-badge'),
             lastUpdatedElement: dashboardElements.trafficLastUpdated,
             summaryElement: dashboardElements.trafficDisruption,
-            summaryKeys: ['disruption', 'traffic_disruption', 'status', 'level'],
-            emptySummary: 'No traffic data'
+            summaryKeys: ['traffic_status', 'disruption', 'traffic_disruption', 'status', 'level'],
+            emptySummary: '—',
+            isStatus: true
         },
         {
             endpoint: 'prices',
             detailElement: dashboardElements.pricesData,
+            panelBadgeElement: document.getElementById('prices-badge'),
             lastUpdatedElement: dashboardElements.pricesLastUpdated,
             summaryElement: dashboardElements.oilPrices,
-            summaryKeys: ['oil_price', 'brent', 'wti', 'price', 'summary'],
-            emptySummary: 'No price data'
+            summaryKeys: ['brent_usd', 'oil_price', 'brent', 'wti_usd', 'wti', 'price', 'summary'],
+            emptySummary: '—'
         },
         {
             endpoint: 'bypass',
             detailElement: dashboardElements.bypassData,
-            summaryKeys: ['capacity', 'available_capacity', 'summary'],
-            emptySummary: 'No bypass data'
+            panelBadgeElement: document.getElementById('bypass-badge'),
+            summaryKeys: ['status', 'total_capacity', 'available_capacity', 'summary'],
+            emptySummary: 'tap to view'
         }
     ];
 
@@ -232,12 +263,20 @@ function setupDashboard() {
 }
 
 async function loadDependencyCountry(country) {
-    setState(dashboardElements.dependencyData, `Loading dependency data for ${country}...`, 'loading');
+    setState(dashboardElements.dependencyData, `Loading...`, 'loading');
+    const badgeEl = document.getElementById('dependency-badge');
     try {
         const data = await fetchProxy('dependency', { country });
         renderObject(dashboardElements.dependencyData, data);
+        const payload = normalizePayload(data);
+        const summary = getValue(payload, ['rank', 'dependency_rank', 'import_dependence', 'gulf_import_share', 'dependency_level'], 'US');
+        if (badgeEl) {
+            badgeEl.textContent = formatValue(summary);
+            applyStatusClass(badgeEl, formatValue(summary));
+        }
     } catch (error) {
         setState(dashboardElements.dependencyData, error?.message || String(error), 'error');
+        if (badgeEl) badgeEl.textContent = 'err';
     }
 }
 
@@ -500,18 +539,44 @@ document.addEventListener('DOMContentLoaded', function() {
   setupCubeClick(fourthCube, 'fourthDx', 'fourthDy');
   animate();
 
+  // Audio toggle button
   const audioToggle = document.getElementById('audio-toggle');
+
+  function markPlaying() {
+    if (audioToggle) audioToggle.textContent = '⏸ Music';
+  }
+
+  // Try to autoplay immediately; browsers usually block this but it works
+  // in some contexts (returning visitor, user gesture from previous page, etc.)
+  audio.play().then(markPlaying).catch(() => {});
+
+  // Guarantee music starts on the very first user interaction anywhere
+  document.addEventListener('click', function startAudio() {
+    if (audio.paused) {
+      audio.play().then(markPlaying).catch(() => {});
+    }
+    document.removeEventListener('click', startAudio, { capture: true });
+  }, { capture: true, once: true });
+
   if (audioToggle) {
     audioToggle.addEventListener('click', function(e) {
       e.stopPropagation();
       if (audio.paused) {
-        audio.play().then(() => {
-          audioToggle.textContent = '⏸ Music';
-        }).catch(() => {});
+        audio.play().then(markPlaying).catch(() => {});
       } else {
         audio.pause();
         audioToggle.textContent = '▶ Music';
       }
     });
   }
+
+  // Expandable panels — click the panel-header to toggle detail visibility
+  document.querySelectorAll('.dashboard-panel:not(.donations-panel)').forEach(function(panel) {
+    const header = panel.querySelector('.panel-header');
+    if (header) {
+      header.addEventListener('click', function() {
+        panel.classList.toggle('expanded');
+      });
+    }
+  });
 });
