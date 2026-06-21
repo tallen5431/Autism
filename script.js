@@ -23,11 +23,17 @@ const dashboardElements = {
     trafficDisruption: document.getElementById('traffic-disruption'),
     trafficLastUpdated: document.getElementById('traffic-last-updated'),
     riskDetails: document.getElementById('risk-details'),
+    riskGauges: document.getElementById('risk-gauges'),
     crisisFeed: document.getElementById('crisis-feed'),
+    crisisGauges: document.getElementById('crisis-gauges'),
     trafficData: document.getElementById('traffic-data'),
+    trafficGauges: document.getElementById('traffic-gauges'),
     pricesData: document.getElementById('prices-data'),
+    pricesGauges: document.getElementById('prices-gauges'),
     bypassData: document.getElementById('bypass-data'),
-    dependencyData: document.getElementById('dependency-data')
+    bypassGauges: document.getElementById('bypass-gauges'),
+    dependencyData: document.getElementById('dependency-data'),
+    dependencyGauges: document.getElementById('dependency-gauges')
 };
 
 function isProxyConfigured() {
@@ -169,6 +175,56 @@ function renderObject(element, data) {
     element.textContent = String(payload);
 }
 
+// Renders only the gauge-bar rows — always visible outside the collapse
+function renderObjectGauges(element, data) {
+    if (!element) return;
+    const payload = normalizePayload(data);
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return;
+
+    const rows = Object.entries(payload)
+        .filter(([key, value]) => getGaugeConfig(key) !== null && typeof value === 'number')
+        .map(([key, value]) => {
+            const gauge = getGaugeConfig(key);
+            return `<div class="data-row"><span class="data-key">${escapeHtml(humanizeKey(key))}</span>${renderGaugeBar(value, gauge.max, gauge.unit)}</div>`;
+        });
+    element.innerHTML = rows.join('');
+}
+
+// Renders all non-gauge rows — shown only when panel is expanded
+function renderObjectText(element, data) {
+    clearState(element);
+    const payload = normalizePayload(data);
+
+    if (!payload ||
+        (Array.isArray(payload) && payload.length === 0) ||
+        (typeof payload === 'object' && !Array.isArray(payload) && Object.keys(payload).length === 0)) {
+        setState(element, 'No data available.', 'empty');
+        return;
+    }
+
+    if (Array.isArray(payload)) {
+        const hasObjects = payload.some(item => typeof item === 'object' && item !== null);
+        if (hasObjects) {
+            element.innerHTML = payload.map(item => `<div class="item-card">${renderItem(item)}</div>`).join('');
+        } else {
+            element.innerHTML = `<ul class="item-list">${payload.map(item => `<li>${renderItem(item)}</li>`).join('')}</ul>`;
+        }
+        return;
+    }
+
+    if (typeof payload === 'object') {
+        const rows = Object.entries(payload)
+            .filter(([key, value]) => !(getGaugeConfig(key) !== null && typeof value === 'number'))
+            .map(([key, value]) =>
+                `<div class="data-row"><span class="data-key">${escapeHtml(humanizeKey(key))}</span><span class="data-val">${renderItem(value)}</span></div>`
+            );
+        element.innerHTML = rows.join('');
+        return;
+    }
+
+    element.textContent = String(payload);
+}
+
 function renderItem(item) {
     if (item === null || item === undefined || item === '') return '—';
     if (typeof item === 'boolean') return item ? 'Yes' : 'No';
@@ -242,14 +298,18 @@ async function fetchProxy(endpoint, query = {}) {
 }
 
 async function loadSection(config) {
-    const { endpoint, detailElement, panelBadgeElement, lastUpdatedElement, summaryElement, summaryKeys, emptySummary, isStatus, onSummarySet, render } = config;
+    const { endpoint, detailElement, gaugesElement, panelBadgeElement, lastUpdatedElement, summaryElement, summaryKeys, emptySummary, isStatus, onSummarySet, render } = config;
     setState(detailElement, 'Loading...', 'loading');
     if (summaryElement) setText(summaryElement, 'Loading...');
 
     try {
         const data = await fetchProxy(endpoint);
-        if (render) render(data);
-        else renderObject(detailElement, data);
+        if (render) {
+            render(data);
+        } else {
+            renderObjectGauges(gaugesElement, data);
+            renderObjectText(detailElement, data);
+        }
 
         // getValueDeep tries outer level first, then one level deeper
         // (handles APIs like crisis that return {status:"x", data:[...]} vs risk that returns {data:{score:9.3}})
@@ -284,6 +344,7 @@ function setupDashboard() {
         {
             endpoint: 'risk',
             detailElement: dashboardElements.riskDetails,
+            gaugesElement: dashboardElements.riskGauges,
             panelBadgeElement: document.getElementById('risk-badge'),
             lastUpdatedElement: dashboardElements.riskLastUpdated,
             summaryElement: dashboardElements.riskScore,
@@ -294,6 +355,7 @@ function setupDashboard() {
         {
             endpoint: 'crisis',
             detailElement: dashboardElements.crisisFeed,
+            gaugesElement: dashboardElements.crisisGauges,
             panelBadgeElement: document.getElementById('crisis-badge'),
             lastUpdatedElement: dashboardElements.crisisLastUpdated,
             summaryElement: dashboardElements.crisisStatus,
@@ -304,6 +366,7 @@ function setupDashboard() {
         {
             endpoint: 'traffic',
             detailElement: dashboardElements.trafficData,
+            gaugesElement: dashboardElements.trafficGauges,
             panelBadgeElement: document.getElementById('traffic-badge'),
             lastUpdatedElement: dashboardElements.trafficLastUpdated,
             summaryElement: dashboardElements.trafficDisruption,
@@ -314,6 +377,7 @@ function setupDashboard() {
         {
             endpoint: 'prices',
             detailElement: dashboardElements.pricesData,
+            gaugesElement: dashboardElements.pricesGauges,
             panelBadgeElement: document.getElementById('prices-badge'),
             lastUpdatedElement: dashboardElements.pricesLastUpdated,
             summaryElement: dashboardElements.oilPrices,
@@ -323,6 +387,7 @@ function setupDashboard() {
         {
             endpoint: 'bypass',
             detailElement: dashboardElements.bypassData,
+            gaugesElement: dashboardElements.bypassGauges,
             panelBadgeElement: document.getElementById('bypass-badge'),
             summaryKeys: ['status', 'total_capacity', 'available_capacity', 'summary'],
             emptySummary: 'tap to view'
@@ -337,11 +402,12 @@ function setupDashboard() {
 }
 
 async function loadDependencyCountry(country) {
-    setState(dashboardElements.dependencyData, `Loading...`, 'loading');
+    setState(dashboardElements.dependencyData, 'Loading...', 'loading');
     const badgeEl = document.getElementById('dependency-badge');
     try {
         const data = await fetchProxy('dependency', { country });
-        renderObject(dashboardElements.dependencyData, data);
+        renderObjectGauges(dashboardElements.dependencyGauges, data);
+        renderObjectText(dashboardElements.dependencyData, data);
         const summary = getValueDeep(data, ['rank', 'dependency_rank', 'import_dependence', 'gulf_import_share', 'dependency_level'], 'US');
         if (badgeEl) {
             badgeEl.textContent = formatValue(summary);

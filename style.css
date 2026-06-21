@@ -385,6 +385,15 @@ h1 {
     opacity: 1;
 }
 
+/* Always-visible gauge bar area */
+.panel-gauges {
+    padding: 5px 0 2px;
+}
+
+.panel-gauges:empty {
+    display: none;
+}
+
 /* Panel content — collapsed by default, click to toggle */
 .panel-data {
     max-height: 0;
@@ -395,7 +404,9 @@ h1 {
 .dashboard-panel.expanded .panel-data {
     max-height: 300px;
     overflow-y: auto;
-    padding-top: 3px;
+    padding-top: 5px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(255, 0, 170, 0.14);
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 0, 170, 0.35) rgba(255, 255, 255, 0.02);
 }
