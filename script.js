@@ -4,12 +4,14 @@ const thirdCube = document.querySelector('.third-cube');
 const fourthCube = document.querySelector('.fourth-cube');
 
 const HORMUZ_PROXY_BASE_URL = (window.HORMUZ_PROXY_BASE_URL || 'https://your-worker.example.workers.dev').replace(/\/$/, '');
+const ONE_HOUR = 60 * 60 * 1000;
+const DEFAULT_DEPENDENCY_COUNTRY = 'US';
 const POLL_INTERVALS = {
-    risk: 5 * 60 * 1000,
-    crisis: 5 * 60 * 1000,
-    traffic: 15 * 60 * 1000,
-    prices: 15 * 60 * 1000,
-    bypass: 60 * 60 * 1000
+    risk: ONE_HOUR,
+    crisis: ONE_HOUR,
+    traffic: ONE_HOUR,
+    prices: ONE_HOUR,
+    bypass: ONE_HOUR
 };
 
 const dashboardElements = {
@@ -213,21 +215,28 @@ function setupDashboard() {
 
     sections.forEach(section => startPolling(section, POLL_INTERVALS[section.endpoint]));
 
-    setState(dashboardElements.dependencyData, 'Select a country to load dependency data.', 'empty');
-    dashboardElements.countryDependencySelect?.addEventListener('change', async event => {
-        const country = event.target.value;
-        if (!country) {
-            setState(dashboardElements.dependencyData, 'Select a country to load dependency data.', 'empty');
-            return;
-        }
-        setState(dashboardElements.dependencyData, `Loading dependency data for ${country}...`, 'loading');
-        try {
-            const data = await fetchProxy('dependency', { country });
-            renderObject(dashboardElements.dependencyData, data);
-        } catch (error) {
-            setState(dashboardElements.dependencyData, error.message, 'error');
-        }
-    });
+    if (dashboardElements.countryDependencySelect) {
+        dashboardElements.countryDependencySelect.value = DEFAULT_DEPENDENCY_COUNTRY;
+        loadDependencyCountry(DEFAULT_DEPENDENCY_COUNTRY);
+        dashboardElements.countryDependencySelect.addEventListener('change', event => {
+            const country = event.target.value;
+            if (!country) {
+                setState(dashboardElements.dependencyData, 'Select a country to load dependency data.', 'empty');
+                return;
+            }
+            loadDependencyCountry(country);
+        });
+    }
+}
+
+async function loadDependencyCountry(country) {
+    setState(dashboardElements.dependencyData, `Loading dependency data for ${country}...`, 'loading');
+    try {
+        const data = await fetchProxy('dependency', { country });
+        renderObject(dashboardElements.dependencyData, data);
+    } catch (error) {
+        setState(dashboardElements.dependencyData, error.message, 'error');
+    }
 }
 
 // Add audio element
@@ -235,9 +244,11 @@ const audio = new Audio('vapor_music.mp3');
 audio.loop = true;
 audio.volume = 0.3;
 
-// Play music when page loads
-window.addEventListener('load', () => {
-    audio.play().catch(e => console.log("Audio play failed:", e));
+// Play music on first user interaction
+window.addEventListener('click', function() {
+    if (audio.paused) {
+        audio.play().catch(e => console.log("Audio play failed:", e));
+    }
 });
 
 // First cube variables (moved outside animate function)
@@ -417,16 +428,22 @@ function animate() {
 
                 const { v1x, v1y, v2x, v2y } = calculateCollision(mass1, mass2, u1x, u1y, u2x, u2y);
 
-                // Apply new velocities immediately
-                if (cube1.id === 0) { dx = v1x; dy = v1y; }
-                else if (cube1.id === 1) { secondDx = v1x; secondDy = v1y; }
-                else if (cube1.id === 2) { thirdDx = v1x; thirdDy = v1y; }
-                else { fourthDx = v1x; fourthDy = v1y; }
+                // Store velocities before applying new ones to prevent using updated values in same frame
+                const newDx1 = v1x;
+                const newDy1 = v1y;
+                const newDx2 = v2x;
+                const newDy2 = v2y;
 
-                if (cube2.id === 0) { dx = v2x; dy = v2y; }
-                else if (cube2.id === 1) { secondDx = v2x; secondDy = v2y; }
-                else if (cube2.id === 2) { thirdDx = v2x; thirdDy = v2y; }
-                else { fourthDx = v2x; fourthDy = v2y; }
+                // Apply new velocities immediately
+                if (cube1.id === 0) { dx = newDx1; dy = newDy1; }
+                else if (cube1.id === 1) { secondDx = newDx1; secondDy = newDy1; }
+                else if (cube1.id === 2) { thirdDx = newDx1; thirdDy = newDy1; }
+                else { fourthDx = newDx1; fourthDy = newDy1; }
+
+                if (cube2.id === 0) { dx = newDx2; dy = newDy2; }
+                else if (cube2.id === 1) { secondDx = newDx2; secondDy = newDy2; }
+                else if (cube2.id === 2) { thirdDx = newDx2; thirdDy = newDy2; }
+                else { fourthDx = newDx2; fourthDy = newDy2; }
 
                 // Add a minimum distance threshold to prevent continuous collisions
                 if (distance < 150) {
@@ -453,85 +470,41 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
+function setupCubeClick(cube, dxVar, dyVar) {
+    if (!cube) return;
+    cube.addEventListener('click', function() {
+        // Change direction on click
+        if (dxVar === 'dx') { dx = -dx; }
+        else if (dxVar === 'secondDx') { secondDx = -secondDx; }
+        else if (dxVar === 'thirdDx') { thirdDx = -thirdDx; }
+        else { fourthDx = -fourthDx; }
+
+        if (dyVar === 'dy') { dy = -dy; }
+        else if (dyVar === 'secondDy') { secondDy = -secondDy; }
+        else if (dyVar === 'thirdDy') { thirdDy = -thirdDy; }
+        else { fourthDy = -fourthDy; }
+
+        // Change image randomly
+        const images = ['obama.png', 'trump.jpg', 'biden.jpg', 'rigby.jpg'];
+        const randomImage = images[Math.floor(Math.random() * images.length)];
+        this.querySelectorAll('.face img').forEach(img => {
+            img.src = randomImage;
+        });
+
+        // Add glow effect
+        this.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.8)';
+        setTimeout(() => {
+            this.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
+        }, 500);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   setupDashboard();
-  const cubes = document.querySelectorAll('.cube');
-
-  firstCube.addEventListener('click', function() {
-      // Change direction on click
-      dx = -dx;
-      dy = -dy;
-
-      // Change image randomly
-      const images = ['obama.png', 'trump.jpg', 'biden.jpg', 'rigby.jpg'];
-      const randomImage = images[Math.floor(Math.random() * images.length)];
-      this.querySelectorAll('.face img').forEach(img => {
-          img.src = randomImage;
-      });
-
-      // Add glow effect
-      this.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.8)';
-      setTimeout(() => {
-          this.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
-      }, 500);
-  });
-
-  secondCube.addEventListener('click', function() {
-      // Change direction on click
-      secondDx = -secondDx;
-      secondDy = -secondDy;
-
-      // Change image randomly
-      const images = ['obama.png', 'trump.jpg', 'biden.jpg', 'rigby.jpg'];
-      const randomImage = images[Math.floor(Math.random() * images.length)];
-      this.querySelectorAll('.face img').forEach(img => {
-          img.src = randomImage;
-      });
-
-      // Add glow effect
-      this.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.8)';
-      setTimeout(() => {
-          this.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
-      }, 500);
-  });
-
-  thirdCube.addEventListener('click', function() {
-      // Change direction on click
-      thirdDx = -thirdDx;
-      thirdDy = -thirdDy;
-
-      // Change image randomly
-      const images = ['obama.png', 'trump.jpg', 'biden.jpg', 'rigby.jpg'];
-      const randomImage = images[Math.floor(Math.random() * images.length)];
-      this.querySelectorAll('.face img').forEach(img => {
-          img.src = randomImage;
-      });
-
-      // Add glow effect
-      this.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.8)';
-      setTimeout(() => {
-          this.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
-      }, 500);
-  });
-
-  fourthCube.addEventListener('click', function() {
-      // Change direction on click
-      fourthDx = -fourthDx;
-      fourthDy = -fourthDy;
-
-      // Change image randomly
-      const images = ['obama.png', 'trump.jpg', 'biden.jpg', 'rigby.jpg'];
-      const randomImage = images[Math.floor(Math.random() * images.length)];
-      this.querySelectorAll('.face img').forEach(img => {
-          img.src = randomImage;
-      });
-
-      // Add glow effect
-      this.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.8)';
-      setTimeout(() => {
-          this.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
-      }, 500);
-  });
+  setupCubeClick(firstCube, 'dx', 'dy');
+  setupCubeClick(secondCube, 'secondDx', 'secondDy');
+  setupCubeClick(thirdCube, 'thirdDx', 'thirdDy');
+  setupCubeClick(fourthCube, 'fourthDx', 'fourthDy');
 });
 
 animate();

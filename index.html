@@ -7,18 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <audio id="backgroundMusic" loop>
-        <source src="vapor_music.mp3" type="audio/mpeg">
-    </audio>
-    <script>
-        // Play music on first user interaction
-        document.addEventListener('click', function() {
-            const audio = document.getElementById('backgroundMusic');
-            if (audio) {
-                audio.play();
-            }
-        });
-    </script>
     <!-- Dashboard Container -->
     <div id="dashboard-container">
         <h1>Hormuz Live Dashboard</h1>
@@ -87,7 +75,7 @@
                 <option value="">Select a country</option>
                 <option value="JP">Japan</option>
                 <option value="CN">China</option>
-                <option value="US">United States</option>
+                <option value="US" selected>United States</option>
                 <option value="IN">India</option>
                 <!-- Add more countries as needed -->
             </select>
