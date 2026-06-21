@@ -585,8 +585,11 @@ function animate() {
 
 function setupCubeClick(cube, dxVar, dyVar) {
     if (!cube) return;
-    cube.addEventListener('click', function() {
-        // Change direction on click
+    // pointerdown fires instantly on touch (no 300ms delay), and doesn't
+    // require the finger to stay still — critical for a moving target
+    cube.addEventListener('pointerdown', function(e) {
+        e.preventDefault(); // stop the delayed 'click' from also firing
+
         if (dxVar === 'dx') { dx = -dx; }
         else if (dxVar === 'secondDx') { secondDx = -secondDx; }
         else if (dxVar === 'thirdDx') { thirdDx = -thirdDx; }
@@ -597,18 +600,17 @@ function setupCubeClick(cube, dxVar, dyVar) {
         else if (dyVar === 'thirdDy') { thirdDy = -thirdDy; }
         else if (dyVar === 'fourthDy') { fourthDy = -fourthDy; }
 
-        // Change image randomly
-        const images = ['obama.png', 'trump.jpg', 'biden.jpg', 'rigby.jpg'];
-        const randomImage = images[Math.floor(Math.random() * images.length)];
-        this.querySelectorAll('.face img').forEach(img => {
-            img.src = randomImage;
-        });
+        // Always pick a different image from the current one
+        const allImages = ['obama.png', 'trump.jpg', 'biden.jpg', 'rigby.jpg'];
+        const currentSrc = this.querySelector('.face img')?.src || '';
+        const others = allImages.filter(img => !currentSrc.endsWith(img));
+        const pool = others.length ? others : allImages;
+        const randomImage = pool[Math.floor(Math.random() * pool.length)];
+        this.querySelectorAll('.face img').forEach(img => { img.src = randomImage; });
 
-        // Add glow effect
-        this.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.8)';
-        setTimeout(() => {
-            this.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
-        }, 500);
+        // Flash glow on tap
+        this.style.filter = 'brightness(2.2) drop-shadow(0 0 28px rgba(0, 238, 255, 1))';
+        setTimeout(() => { this.style.filter = ''; }, 350);
     });
 }
 
