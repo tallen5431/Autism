@@ -87,22 +87,26 @@ function formatValue(value) {
     return String(value);
 }
 
-// Fields that deserve a bar gauge and their max scale
+// Fields that deserve a bar gauge: { max, unit }
 const GAUGE_FIELDS = {
-    risk_score: 10, composite_score: 10, score: 10,
-    reduction_pct: 100, traffic_reduction_pct: 100,
-    utilisation_pct: 100, utilisation: 100,
-    capacity_utilisation: 100, spr_coverage_days: 120
+    risk_score:            { max: 10,  unit: '/10'   },
+    composite_score:       { max: 10,  unit: '/10'   },
+    score:                 { max: 10,  unit: '/10'   },
+    reduction_pct:         { max: 100, unit: '%'     },
+    traffic_reduction_pct: { max: 100, unit: '%'     },
+    utilisation_pct:       { max: 100, unit: '%'     },
+    utilisation:           { max: 100, unit: '%'     },
+    capacity_utilisation:  { max: 100, unit: '%'     },
+    spr_coverage_days:     { max: 120, unit: ' days' }
 };
 
-function getGaugeMax(key) {
+function getGaugeConfig(key) {
     return GAUGE_FIELDS[key.toLowerCase().replace(/[- ]/g, '_')] || null;
 }
 
-function renderGaugeBar(num, max) {
+function renderGaugeBar(num, max, unit = '%') {
     const pct = Math.min(100, Math.max(0, (num / max) * 100));
     const color = pct > 75 ? '#ff3344' : pct > 40 ? '#ff8800' : '#00ff88';
-    const unit = max === 10 ? '/10' : '%';
     return `<div class="gauge-bar-inline"><div class="gauge-bar-track"><div class="gauge-bar-fill" style="width:${pct.toFixed(1)}%;background:${color};box-shadow:0 0 5px ${color}99"></div></div><span class="gauge-bar-num">${num}${unit}</span></div>`;
 }
 
@@ -152,9 +156,9 @@ function renderObject(element, data) {
     if (typeof payload === 'object') {
         element.innerHTML = Object.entries(payload)
             .map(([key, value]) => {
-                const gaugeMax = getGaugeMax(key);
-                const valHtml = (gaugeMax !== null && typeof value === 'number')
-                    ? renderGaugeBar(value, gaugeMax)
+                const gauge = getGaugeConfig(key);
+                const valHtml = (gauge !== null && typeof value === 'number')
+                    ? renderGaugeBar(value, gauge.max, gauge.unit)
                     : `<span class="data-val">${renderItem(value)}</span>`;
                 return `<div class="data-row"><span class="data-key">${escapeHtml(humanizeKey(key))}</span>${valHtml}</div>`;
             })
@@ -200,9 +204,9 @@ function renderItem(item) {
         const entries = Object.entries(item);
         if (!entries.length) return '—';
         return entries.map(([k, v]) => {
-            const gaugeMax = getGaugeMax(k);
-            const valHtml = (gaugeMax !== null && typeof v === 'number')
-                ? renderGaugeBar(v, gaugeMax)
+            const gauge = getGaugeConfig(k);
+            const valHtml = (gauge !== null && typeof v === 'number')
+                ? renderGaugeBar(v, gauge.max, gauge.unit)
                 : `<span class="data-val">${renderItem(v)}</span>`;
             return `<div class="nested-row"><span class="data-key">${escapeHtml(humanizeKey(k))}</span>${valHtml}</div>`;
         }).join('');
@@ -430,7 +434,15 @@ function createParticles(startX, startY, color) {
     }
 }
 
+function getCubeSize() {
+    return window.innerWidth <= 768 ? 80 : 130;
+}
+
 function animate() {
+    const CUBE = getCubeSize();
+    const SEP_THRESH = Math.round(CUBE * 0.77);
+    const SEP_PUSH   = Math.round(CUBE * 0.27);
+
     // Store previous positions for collision detection
     const prevX = x;
     const prevY = y;
@@ -442,8 +454,8 @@ function animate() {
     const prevFourthY = fourthY;
 
     // First cube animation
-    if (x + 130 > window.innerWidth || x < 0) dx = -dx;
-    if (y + 130 > window.innerHeight || y < 0) dy = -dy;
+    if (x + CUBE > window.innerWidth || x < 0) dx = -dx;
+    if (y + CUBE > window.innerHeight || y < 0) dy = -dy;
 
     x += dx;
     y += dy;
@@ -456,8 +468,8 @@ function animate() {
     firstCube.style.transform = 'rotateX(' + rotationX + 'deg) rotateY(' + rotationY + 'deg)';
 
     // Second cube animation (with different starting position and speed)
-    if (secondX + 130 > window.innerWidth || secondX < 0) secondDx = -secondDx;
-    if (secondY + 130 > window.innerHeight || secondY < 0) secondDy = -secondDy;
+    if (secondX + CUBE > window.innerWidth || secondX < 0) secondDx = -secondDx;
+    if (secondY + CUBE > window.innerHeight || secondY < 0) secondDy = -secondDy;
 
     secondX += secondDx;
     secondY += secondDy;
@@ -470,8 +482,8 @@ function animate() {
     secondCube.style.transform = 'rotateX(' + secondRotationX + 'deg) rotateY(' + secondRotationY + 'deg)';
 
     // Third cube animation
-    if (thirdX + 130 > window.innerWidth || thirdX < 0) thirdDx = -thirdDx;
-    if (thirdY + 130 > window.innerHeight || thirdY < 0) thirdDy = -thirdDy;
+    if (thirdX + CUBE > window.innerWidth || thirdX < 0) thirdDx = -thirdDx;
+    if (thirdY + CUBE > window.innerHeight || thirdY < 0) thirdDy = -thirdDy;
 
     thirdX += thirdDx;
     thirdY += thirdDy;
@@ -484,8 +496,8 @@ function animate() {
     thirdCube.style.transform = 'rotateX(' + thirdRotationX + 'deg) rotateY(' + thirdRotationY + 'deg)';
 
     // Fourth cube animation
-    if (fourthX + 130 > window.innerWidth || fourthX < 0) fourthDx = -fourthDx;
-    if (fourthY + 130 > window.innerHeight || fourthY < 0) fourthDy = -fourthDy;
+    if (fourthX + CUBE > window.innerWidth || fourthX < 0) fourthDx = -fourthDx;
+    if (fourthY + CUBE > window.innerHeight || fourthY < 0) fourthDy = -fourthDy;
 
     fourthX += fourthDx;
     fourthY += fourthDy;
@@ -513,7 +525,7 @@ function animate() {
             const pairKey = `${i}-${j}`;
 
             const distance = Math.sqrt((cube1.x - cube2.x) ** 2 + (cube1.y - cube2.y) ** 2);
-            if (distance < 130) {
+            if (distance < CUBE) {
                 // Relative velocity from position deltas; only respond when cubes are approaching
                 const relVx = (cube1.x - cube1.prevX) - (cube2.x - cube2.prevX);
                 const relVy = (cube1.y - cube1.prevY) - (cube2.y - cube2.prevY);
@@ -547,10 +559,10 @@ function animate() {
                     collidingPairs.delete(pairKey);
                 }
 
-                if (distance < 100) {
+                if (distance < SEP_THRESH) {
                     const angle = Math.atan2(cube1.y - cube2.y, cube1.x - cube2.x);
-                    const moveX = Math.cos(angle) * 35;
-                    const moveY = Math.sin(angle) * 35;
+                    const moveX = Math.cos(angle) * SEP_PUSH;
+                    const moveY = Math.sin(angle) * SEP_PUSH;
 
                     if (cube1.id === 0) { x += moveX; y += moveY; }
                     else if (cube1.id === 1) { secondX += moveX; secondY += moveY; }

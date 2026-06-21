@@ -535,6 +535,10 @@ h1 {
     grid-template-columns: 1fr;
 }
 
+.data-row:has(.gauge-bar-inline) {
+    align-items: center;
+}
+
 .data-key {
     color: rgba(210, 160, 255, 0.65);
     font-size: 0.78em;
