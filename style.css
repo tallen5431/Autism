@@ -133,17 +133,40 @@ body::after {
 
 .panels-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 10px;
 }
 
 .dashboard-panel {
     background: rgba(255, 255, 255, 0.15);
-    border-radius: 15px;
-    padding: 15px;
+    border-radius: 12px;
+    padding: 12px;
     margin-bottom: 0;
     backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-data {
+    flex: 1;
+    max-height: 180px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.3) transparent;
+}
+
+.panel-data::-webkit-scrollbar {
+    width: 4px;
+}
+
+.panel-data::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.panel-data::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
 }
 
 .donations-panel {
@@ -184,9 +207,13 @@ body::after {
 
 .dashboard-panel h2 {
     color: white;
-    margin-top: 0;
+    margin: 0 0 8px;
+    font-size: 0.95em;
+    font-weight: 700;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    padding-bottom: 10px;
+    padding-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .container {
@@ -330,17 +357,21 @@ p {
 }
 
 .data-row {
-    margin: 8px 0;
+    margin: 3px 0;
     color: white;
-    line-height: 1.4;
+    font-size: 0.82em;
+    line-height: 1.3;
 }
 
 .data-row pre {
     white-space: pre-wrap;
     word-break: break-word;
     background: rgba(0, 0, 0, 0.18);
-    border-radius: 8px;
-    padding: 10px;
+    border-radius: 6px;
+    padding: 6px 8px;
     overflow-x: auto;
+    font-size: 0.9em;
+    max-height: 80px;
+    overflow-y: auto;
 }
 
