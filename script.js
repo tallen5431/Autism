@@ -90,7 +90,12 @@ function renderObject(element, data) {
     }
 
     if (Array.isArray(payload)) {
-        element.innerHTML = payload.map(item => `<div class="data-row">${renderItem(item)}</div>`).join('');
+        const hasObjects = payload.some(item => typeof item === 'object' && item !== null);
+        if (hasObjects) {
+            element.innerHTML = payload.map(item => `<div class="item-card">${renderItem(item)}</div>`).join('');
+        } else {
+            element.innerHTML = `<ul class="item-list">${payload.map(item => `<li>${renderItem(item)}</li>`).join('')}</ul>`;
+        }
         return;
     }
 
@@ -107,10 +112,18 @@ function renderObject(element, data) {
 function renderItem(item) {
     if (item === null || item === undefined || item === '') return '—';
     if (Array.isArray(item)) {
-        return item.length ? `<ul>${item.map(value => `<li>${renderItem(value)}</li>`).join('')}</ul>` : 'None';
+        if (!item.length) return 'None';
+        if (item.some(v => typeof v === 'object' && v !== null)) {
+            return item.map(v => `<div class="item-card">${renderItem(v)}</div>`).join('');
+        }
+        return `<ul class="item-list">${item.map(v => `<li>${escapeHtml(String(v))}</li>`).join('')}</ul>`;
     }
     if (typeof item === 'object') {
-        return `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`;
+        const entries = Object.entries(item);
+        if (!entries.length) return '—';
+        return entries.map(([k, v]) =>
+            `<div class="nested-row"><span class="data-key">${escapeHtml(humanizeKey(k))}</span><span class="data-val">${renderItem(v)}</span></div>`
+        ).join('');
     }
     return escapeHtml(String(item));
 }
