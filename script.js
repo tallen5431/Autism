@@ -27,7 +27,6 @@ const dashboardElements = {
     trafficData: document.getElementById('traffic-data'),
     pricesData: document.getElementById('prices-data'),
     bypassData: document.getElementById('bypass-data'),
-    countryDependencySelect: document.getElementById('country-dependency-select'),
     dependencyData: document.getElementById('dependency-data')
 };
 
@@ -216,18 +215,7 @@ function setupDashboard() {
         setTimeout(() => startPolling(section, POLL_INTERVALS[section.endpoint]), index * 2000);
     });
 
-    if (dashboardElements.countryDependencySelect) {
-        dashboardElements.countryDependencySelect.value = DEFAULT_DEPENDENCY_COUNTRY;
-        loadDependencyCountry(DEFAULT_DEPENDENCY_COUNTRY);
-        dashboardElements.countryDependencySelect.addEventListener('change', event => {
-            const country = event.target.value;
-            if (!country) {
-                setState(dashboardElements.dependencyData, 'Select a country to load dependency data.', 'empty');
-                return;
-            }
-            loadDependencyCountry(country);
-        });
-    }
+    loadDependencyCountry(DEFAULT_DEPENDENCY_COUNTRY);
 }
 
 async function loadDependencyCountry(country) {
@@ -341,8 +329,8 @@ function animate() {
     const prevFourthY = fourthY;
 
     // First cube animation
-    if (x + 200 > window.innerWidth || x < 0) dx = -dx;
-    if (y + 200 > window.innerHeight || y < 0) dy = -dy;
+    if (x + 130 > window.innerWidth || x < 0) dx = -dx;
+    if (y + 130 > window.innerHeight || y < 0) dy = -dy;
 
     x += dx;
     y += dy;
@@ -355,8 +343,8 @@ function animate() {
     firstCube.style.transform = 'rotateX(' + rotationX + 'deg) rotateY(' + rotationY + 'deg)';
 
     // Second cube animation (with different starting position and speed)
-    if (secondX + 200 > window.innerWidth || secondX < 0) secondDx = -secondDx;
-    if (secondY + 200 > window.innerHeight || secondY < 0) secondDy = -secondDy;
+    if (secondX + 130 > window.innerWidth || secondX < 0) secondDx = -secondDx;
+    if (secondY + 130 > window.innerHeight || secondY < 0) secondDy = -secondDy;
 
     secondX += secondDx;
     secondY += secondDy;
@@ -369,8 +357,8 @@ function animate() {
     secondCube.style.transform = 'rotateX(' + secondRotationX + 'deg) rotateY(' + secondRotationY + 'deg)';
 
     // Third cube animation
-    if (thirdX + 200 > window.innerWidth || thirdX < 0) thirdDx = -thirdDx;
-    if (thirdY + 200 > window.innerHeight || thirdY < 0) thirdDy = -thirdDy;
+    if (thirdX + 130 > window.innerWidth || thirdX < 0) thirdDx = -thirdDx;
+    if (thirdY + 130 > window.innerHeight || thirdY < 0) thirdDy = -thirdDy;
 
     thirdX += thirdDx;
     thirdY += thirdDy;
@@ -383,8 +371,8 @@ function animate() {
     thirdCube.style.transform = 'rotateX(' + thirdRotationX + 'deg) rotateY(' + thirdRotationY + 'deg)';
 
     // Fourth cube animation
-    if (fourthX + 200 > window.innerWidth || fourthX < 0) fourthDx = -fourthDx;
-    if (fourthY + 200 > window.innerHeight || fourthY < 0) fourthDy = -fourthDy;
+    if (fourthX + 130 > window.innerWidth || fourthX < 0) fourthDx = -fourthDx;
+    if (fourthY + 130 > window.innerHeight || fourthY < 0) fourthDy = -fourthDy;
 
     fourthX += fourthDx;
     fourthY += fourthDy;
@@ -412,7 +400,7 @@ function animate() {
             const pairKey = `${i}-${j}`;
 
             const distance = Math.sqrt((cube1.x - cube2.x) ** 2 + (cube1.y - cube2.y) ** 2);
-            if (distance < 200) {
+            if (distance < 130) {
                 // Relative velocity from position deltas; only respond when cubes are approaching
                 const relVx = (cube1.x - cube1.prevX) - (cube2.x - cube2.prevX);
                 const relVy = (cube1.y - cube1.prevY) - (cube2.y - cube2.prevY);
@@ -445,7 +433,7 @@ function animate() {
                     collidingPairs.delete(pairKey);
                 }
 
-                if (distance < 150) {
+                if (distance < 100) {
                     const angle = Math.atan2(cube1.y - cube2.y, cube1.x - cube2.x);
                     const moveX = Math.cos(angle) * 35;
                     const moveY = Math.sin(angle) * 35;
