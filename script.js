@@ -241,17 +241,9 @@ async function loadDependencyCountry(country) {
     }
 }
 
-// Add audio element
 const audio = new Audio('vapor_music.mp3');
 audio.loop = true;
 audio.volume = 0.3;
-
-// Play music on first user interaction
-window.addEventListener('click', function() {
-    if (audio.paused) {
-        audio.play().catch(e => console.log("Audio play failed:", e));
-    }
-});
 
 const collidingPairs = new Set();
 
@@ -423,7 +415,8 @@ function animate() {
 
                 if (approaching) {
                     if (!collidingPairs.has(pairKey)) {
-                        createParticles(cube1.x, cube1.y, '#ff00ff');
+                        const neonColors = ['#ff00aa', '#00eeff', '#9900ff', '#ff8800'];
+                        createParticles(cube1.x, cube1.y, neonColors[Math.floor(Math.random() * neonColors.length)]);
                     }
                     collidingPairs.add(pairKey);
 
@@ -506,4 +499,19 @@ document.addEventListener('DOMContentLoaded', function() {
   setupCubeClick(thirdCube, 'thirdDx', 'thirdDy');
   setupCubeClick(fourthCube, 'fourthDx', 'fourthDy');
   animate();
+
+  const audioToggle = document.getElementById('audio-toggle');
+  if (audioToggle) {
+    audioToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (audio.paused) {
+        audio.play().then(() => {
+          audioToggle.textContent = '⏸ Music';
+        }).catch(() => {});
+      } else {
+        audio.pause();
+        audioToggle.textContent = '▶ Music';
+      }
+    });
+  }
 });

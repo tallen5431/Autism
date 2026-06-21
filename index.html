@@ -7,9 +7,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Vaporwave background layer -->
+    <div class="bg-layer">
+        <div class="synth-sun"></div>
+        <div class="grid-floor"></div>
+    </div>
+
     <!-- Dashboard Container -->
     <div id="dashboard-container">
-        <h1>Hormuz Vibe Check</h1>
+        <div class="site-header">
+            <h1>Hormuz Vibe Check</h1>
+            <button class="audio-btn" id="audio-toggle">&#9654; Music</button>
+        </div>
 
         <!-- Top Cards -->
         <div class="dashboard-cards">
@@ -47,7 +56,7 @@
 
             <!-- Crisis Feed -->
             <div class="dashboard-panel">
-                <h2>Crisis & Key Developments</h2>
+                <h2>Crisis &amp; Key Developments</h2>
                 <div class="panel-data crisis-feed" id="crisis-feed">Loading...</div>
             </div>
 
@@ -59,7 +68,7 @@
 
             <!-- Prices Panel -->
             <div class="dashboard-panel">
-                <h2>Oil & Shipping Prices</h2>
+                <h2>Oil &amp; Shipping Prices</h2>
                 <div class="panel-data prices-data" id="prices-data">Loading...</div>
             </div>
 
@@ -88,6 +97,7 @@
         </div>
     </div>
 
+    <!-- Bouncing cubes -->
     <div class="container">
         <div class="cube first-cube" style="left: 100px; top: 100px;">
             <div class="face front"><img src="obama.png" alt="Obama"></div>
@@ -122,6 +132,7 @@
             <div class="face bottom"><img src="rigby.jpg" alt="Rigby"></div>
         </div>
     </div>
+
     <script>
         // Replace this with your deployed Cloudflare Worker, Vercel, or Netlify proxy URL.
         // Do not place the Hormuz API key in this static frontend.
