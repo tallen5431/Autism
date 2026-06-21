@@ -22,7 +22,7 @@
     <!-- Dashboard Container -->
     <div id="dashboard-container">
         <h1>Hormuz Live Dashboard</h1>
-        
+
         <!-- Top Cards -->
         <div class="dashboard-cards">
             <div class="card risk-score-card">
@@ -30,19 +30,19 @@
                 <div class="score-value" id="risk-score">Loading...</div>
                 <div class="last-updated" id="risk-last-updated">Last updated: --</div>
             </div>
-            
+
             <div class="card crisis-card">
                 <h3>Crisis Status</h3>
                 <div class="status-value" id="crisis-status">Loading...</div>
                 <div class="last-updated" id="crisis-last-updated">Last updated: --</div>
             </div>
-            
+
             <div class="card prices-card">
                 <h3>Oil Prices</h3>
                 <div class="prices-value" id="oil-prices">Loading...</div>
                 <div class="last-updated" id="prices-last-updated">Last updated: --</div>
             </div>
-            
+
             <div class="card traffic-card">
                 <h3>Traffic Disruption</h3>
                 <div class="traffic-value" id="traffic-disruption">Loading...</div>
@@ -129,6 +129,11 @@
             <div class="face bottom"><img src="rigby.jpg" alt="Rigby"></div>
         </div>
     </div>
+    <script>
+        // Replace this with your deployed Cloudflare Worker, Vercel, or Netlify proxy URL.
+        // Do not place the Hormuz API key in this static frontend.
+        window.HORMUZ_PROXY_BASE_URL = 'https://your-worker.example.workers.dev';
+    </script>
     <script src="script.js"></script>
 </body>
 </html>

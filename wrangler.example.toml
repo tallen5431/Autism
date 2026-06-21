@@ -1,0 +1,6 @@
+name = "hormuz-live-proxy"
+main = "worker.js"
+compatibility_date = "2026-06-21"
+
+# Set the API key as a Cloudflare Worker secret, never in source code:
+# wrangler secret put HORMUZ_API_KEY
